@@ -5,6 +5,10 @@ edition = "2021"
 description = "This is a Rust library providing external facing functions to performant and trusted encryption in Rust"
 license = "Apache-2.0"
 
+[lib]
+name="PerformantEncryption"
+crate-type = ["dylib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

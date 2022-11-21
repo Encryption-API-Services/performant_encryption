@@ -1,12 +1,12 @@
 [package]
-name = "PerformantEncryption"
+name = "performant_encryption"
 version = "0.1.0"
 edition = "2021"
 description = "This is a Rust library providing external facing functions to performant and trusted encryption in Rust"
 license = "Apache-2.0"
 
 [lib]
-name="PerformantEncryption"
+name="performant_encryption"
 path = "src/lib.rs"
 crate-type = ["dylib"]
 

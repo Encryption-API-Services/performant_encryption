@@ -1,11 +1,22 @@
-use std::ffi::{CString, c_char};
+use std::{ffi::{CString, c_char}};
 
 use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, pkcs8::EncodePrivateKey};
+use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs1::EncodeRsaPublicKey};
 
-#[no_mangle] 
-pub extern "C" fn get_private_key(key_size: usize) -> *mut c_char {
+#[repr(C)]
+pub struct RsaKeyPair {
+    pub pub_key: *mut c_char,
+    pub priv_key: *mut c_char
+}
+
+#[no_mangle]
+pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
     let mut rng: OsRng = OsRng;
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, key_size).expect("failed to generate a key");
-    return CString::new(private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF).unwrap().to_string()).unwrap().into_raw();
+    let public_key: RsaPublicKey = private_key.to_public_key();
+    let key_pair = RsaKeyPair {
+        pub_key: CString::new(public_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF).unwrap().to_string()).unwrap().into_raw(),
+        priv_key: CString::new(private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF).unwrap().to_string()).unwrap().into_raw()
+    };
+    return key_pair;
 }

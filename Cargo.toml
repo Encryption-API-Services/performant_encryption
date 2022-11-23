@@ -15,4 +15,5 @@ crate-type = ["dylib"]
 [dependencies]
 bcrypt = "0.13.0"
 magic-crypt = "3.1.12"
+rand = "0.8.5"
 rsa = "0.7.2"

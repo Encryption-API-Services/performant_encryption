@@ -1,5 +1,6 @@
 use std::{ffi::{CString, c_char}};
 
+use magic_crypt::generic_array::typenum::assert_type;
 use rand::rngs::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs1::EncodeRsaPublicKey};
 
@@ -19,4 +20,19 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
         priv_key: CString::new(private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF).unwrap().to_string()).unwrap().into_raw()
     };
     return key_pair;
+}
+
+#[test]
+fn get_key_pair_test() {
+    let key_pair = get_key_pair(4096);
+
+    let pub_key_cstr = unsafe {CString::from_raw(key_pair.pub_key)};
+    let priv_key_cstr = unsafe {CString::from_raw(key_pair.priv_key)};
+
+    let pub_key_str = pub_key_cstr.to_str().unwrap();
+    let priv_key_str = priv_key_cstr.to_str().unwrap();
+
+
+    assert_ne!(pub_key_str, priv_key_str);
+
 }

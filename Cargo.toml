@@ -13,6 +13,7 @@ crate-type = ["dylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+argon2 = "0.4.1"
 bcrypt = "0.13.0"
 magic-crypt = "3.1.12"
 rand = "0.8.5"

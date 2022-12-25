@@ -1,13 +1,31 @@
-use std::{ffi::{CString, c_char}};
+use std::{ffi::{CString, c_char, CStr}};
 
 use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs1::EncodeRsaPublicKey};
+use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::{EncodePrivateKey, DecodePrivateKey}, pkcs1::{EncodeRsaPublicKey, DecodeRsaPublicKey}, PublicKey, PaddingScheme};
 
 #[repr(C)]
 pub struct RsaKeyPair {
     pub pub_key: *mut c_char,
     pub priv_key: *mut c_char
 }
+
+#[no_mangle]
+pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_char) {
+    let pub_key_string = unsafe {
+        assert!(!pub_key.is_null());
+
+        CStr::from_ptr(pub_key)
+    }.to_str().unwrap();
+
+    let data_to_encrypt_bytes = unsafe {
+        assert!(!data_to_encrypt.is_null());
+
+        CStr::from_ptr(data_to_encrypt)
+    }.to_str().unwrap().as_bytes();
+
+    let public_key = RsaPublicKey::from_pkcs1_pem(pub_key_string).unwrap();
+    let mut rng = rand::thread_rng();
+    let encrypted_string = String::from_utf8(public_key.encrypt(&mut rng, PaddingScheme::new_pkcs1v15_encrypt(), &data_to_encrypt_bytes).unwrap()).unwrap();
 
 #[no_mangle]
 pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {

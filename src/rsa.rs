@@ -10,7 +10,7 @@ pub struct RsaKeyPair {
 }
 
 #[no_mangle]
-pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_char) {
+pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_char) -> *mut c_char {
     let pub_key_string = unsafe {
         assert!(!pub_key.is_null());
 
@@ -25,7 +25,9 @@ pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_
 
     let public_key = RsaPublicKey::from_pkcs1_pem(pub_key_string).unwrap();
     let mut rng = rand::thread_rng();
-    let encrypted_string = String::from_utf8(public_key.encrypt(&mut rng, PaddingScheme::new_pkcs1v15_encrypt(), &data_to_encrypt_bytes).unwrap()).unwrap();
+    let encrypted_string = CString::from_vec_with_nul(public_key.encrypt(&mut rng, PaddingScheme::new_pkcs1v15_encrypt(), &data_to_encrypt_bytes).unwrap()).unwrap();
+    return encrypted_string.into_raw();
+}
 
 #[no_mangle]
 pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {

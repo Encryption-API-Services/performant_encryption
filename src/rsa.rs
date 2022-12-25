@@ -20,3 +20,11 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
     };
     return key_pair;
 }
+
+#[test]
+fn get_key_pair_test() {
+    let key_size = 4096 as usize;
+    let key_pair = get_key_pair(key_size);
+    assert!(!key_pair.pub_key.is_null());
+    assert!(!key_pair.priv_key.is_null());
+}

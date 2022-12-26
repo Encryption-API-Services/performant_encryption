@@ -29,6 +29,21 @@ pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_
     return CString::new(base64::encode(encrypted_bytes)).unwrap().into_raw();
 }
 
+#[test]
+fn rsa_encrypt_test() {
+    let keys = get_key_pair(2048);
+    let public_key_cstr = unsafe {CString::from_raw(keys.pub_key)};
+    let public_key_ptr = public_key_cstr.as_bytes_with_nul().as_ptr() as *const c_char;
+
+    let data_to_encrypt = "EncryptThisDataNow";
+    let data_to_encrypt_ptr = CString::new(data_to_encrypt).unwrap().as_bytes_with_nul().as_ptr() as *const c_char;
+
+    let encrypted = rsa_encrypt(public_key_ptr, data_to_encrypt_ptr);
+    let encrypted_cstr = unsafe{CString::from_raw(encrypted)};
+    let encrypted_str = encrypted_cstr.to_str().unwrap();
+    assert_ne!(data_to_encrypt, encrypted_str);
+}
+
 #[no_mangle]
 pub extern "C" fn rsa_decrypt(priv_key: *const c_char, data_to_decrypt: *const c_char) -> *mut c_char {
     let priv_key_string = unsafe {

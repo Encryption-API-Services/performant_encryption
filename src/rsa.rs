@@ -43,7 +43,6 @@ fn rsa_encrypt_test() {
     let encrypted_str = encrypted_cstr.to_str().unwrap();
     assert_ne!(data_to_encrypt, encrypted_str);
 }
-
 #[no_mangle]
 pub extern "C" fn rsa_decrypt(priv_key: *const c_char, data_to_decrypt: *const c_char) -> *mut c_char {
     let priv_key_string = unsafe {

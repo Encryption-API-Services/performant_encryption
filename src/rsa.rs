@@ -83,6 +83,21 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
     return key_pair;
 }
 
+#[no_mangle]
+pub extern "C" fn rsa_sign(data_to_sign: *mut c_char, key_size: usize) -> RsaSignResult {
+    let data_to_sign = unsafe {
+        assert!(!data_to_sign.is_null());
+
+        CStr::from_ptr(data_to_sign)
+    }.to_bytes();
+    let mut rng: OsRng = OsRng;
+    let private_key = RsaPrivateKey::new(&mut rng, key_size).expect("failed to generate a key");
+    let signature = CString::new(base64::encode(private_key.sign(PaddingScheme::new_pkcs1v15_sign_raw(), data_to_sign).unwrap())).unwrap().into_raw();
+    let public_key = private_key.to_public_key();
+    let public_key = CString::new(public_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF).unwrap().to_string()).unwrap().into_raw();
+    return RsaSignResult { signature: signature, public_key: public_key }
+}
+
 #[test]
 fn rsa_sign_nonffi_test() {
     let mut rng: OsRng = OsRng;

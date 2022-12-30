@@ -1,4 +1,4 @@
-use std::{ffi::{CString, c_char, CStr}, hash::Hash};
+use std::{ffi::{CString, c_char, CStr}};
 
 use rand::rngs::OsRng;
 use rsa::RsaPrivateKey;
@@ -107,6 +107,31 @@ fn rsa_sign_nonffi_test() {
     let data = b"testing";
     let signature = private_key.sign(PaddingScheme::new_pkcs1v15_sign_raw(), data).unwrap();
     assert_ne!(data.as_slice(), signature);
+}
+
+#[no_mangle]
+pub extern "C" fn rsa_verify(public_key: *mut c_char, data_to_verify: *mut c_char, signature: *mut c_char) -> bool {
+    let public_key_string = unsafe {
+        assert!(!public_key.is_null());
+        CStr::from_ptr(public_key)
+    }.to_str().unwrap();
+    let data_to_verify_bytes = unsafe {
+        assert!(!data_to_verify.is_null());
+        CStr::from_ptr(data_to_verify)
+    }.to_bytes();
+    let signature_string = unsafe {
+        assert!(!signature.is_null());
+        CStr::from_ptr(signature)
+    }.to_str().unwrap();
+    let signature_bytes = base64::decode(signature_string).unwrap();
+
+    let public_key = RsaPublicKey::from_pkcs1_pem(public_key_string).unwrap();
+    let verified = public_key.verify(PaddingScheme::new_pkcs1v15_sign_raw(), &data_to_verify_bytes, &signature_bytes);
+    if verified.is_err() == false {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 #[test]

@@ -10,6 +10,11 @@ pub struct RsaKeyPair {
     pub priv_key: *mut c_char
 }
 
+pub struct RsaSignResult {
+    pub signature: *mut c_char,
+    pub public_key: *mut c_char
+}
+
 #[no_mangle]
 pub extern "C" fn rsa_encrypt(pub_key: *const c_char, data_to_encrypt: *const c_char) -> *mut c_char {
     let pub_key_string = unsafe {
@@ -79,7 +84,7 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
 }
 
 #[test]
-fn rsa_sign_data_test() {
+fn rsa_sign_nonffi_test() {
     let mut rng: OsRng = OsRng;
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, 2094).expect("failed to generate a key");
     let public_key: RsaPublicKey = private_key.to_public_key();
@@ -89,7 +94,7 @@ fn rsa_sign_data_test() {
 }
 
 #[test]
-fn rsa_verify_data_test() {
+fn rsa_verify_nonffi_test() {
     let mut rng: OsRng = OsRng;
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, 2094).expect("failed to generate a key");
     let public_key: RsaPublicKey = private_key.to_public_key();

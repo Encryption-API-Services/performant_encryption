@@ -5,6 +5,8 @@ use argon2::{
     Argon2,
 };
 
+static mut ARGON2_STRING_POINTER: *mut c_char = 0 as *mut c_char;
+
 #[no_mangle]
 pub extern "C" fn argon2_verify(hashed_pass: *const c_char, password: *const c_char) -> bool {
     let hashed_pass_string = unsafe {
@@ -55,8 +57,27 @@ pub extern "C" fn argon2_hash(pass_to_hash: *const c_char) -> *mut c_char {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     let password_hash =
-        CString::new(argon2.hash_password(pass_bytes, &salt).unwrap().to_string()).unwrap();
-    return password_hash.into_raw();
+        store_string_on_heap(argon2.hash_password(pass_bytes, &salt).unwrap().to_string());
+    return password_hash;
+}
+
+fn store_string_on_heap(string_to_store: String) -> *mut c_char {
+    //create a new raw pointer
+    let pntr = CString::new(string_to_store).unwrap().into_raw();
+    //store it in our static variable (REQUIRES UNSAFE)
+    unsafe {
+        ARGON2_STRING_POINTER = pntr;
+    }
+    //return the c_char
+    return pntr;
+}
+
+#[no_mangle]
+pub extern "C" fn free_argon2_string() {
+    unsafe {
+        let _ = CString::from_raw(ARGON2_STRING_POINTER);
+        ARGON2_STRING_POINTER = 0 as *mut c_char;
+    }
 }
 
 #[test]

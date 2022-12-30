@@ -1,7 +1,8 @@
-use std::{ffi::{CString, c_char, CStr}};
+use std::{ffi::{CString, c_char, CStr}, hash::Hash};
 
 use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::{EncodePrivateKey, DecodePrivateKey}, pkcs1::{EncodeRsaPublicKey, DecodeRsaPublicKey}, PublicKey, PaddingScheme};
+use rsa::RsaPrivateKey;
+use rsa::{RsaPublicKey, pkcs8::{EncodePrivateKey, DecodePrivateKey}, pkcs1::{EncodeRsaPublicKey, DecodeRsaPublicKey}, PublicKey, PaddingScheme};
 
 #[repr(C)]
 pub struct RsaKeyPair {
@@ -75,6 +76,29 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
         priv_key: CString::new(private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF).unwrap().to_string()).unwrap().into_raw()
     };
     return key_pair;
+}
+
+#[test]
+fn rsa_sign_nonffi_test() {
+    let keys = get_key_pair(4096);
+    let private_key_cstr = unsafe {CString::from_raw(keys.priv_key)};
+    let mut rng: OsRng = OsRng;
+    let private_key = RsaPrivateKey::from_pkcs8_pem(private_key_cstr).unwrap();
+    let public_key: RsaPublicKey = private_key.to_public_key();
+    let data = b"testing";
+    let signature = private_key.sign(PaddingScheme::new_pkcs1v15_sign_raw(), data).unwrap();
+    assert_ne!(data.as_slice(), signature);
+}
+
+#[test]
+fn rsa_verify_nonffi_test() {
+    let mut rng: OsRng = OsRng;
+    let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, 2094).expect("failed to generate a key");
+    let public_key: RsaPublicKey = private_key.to_public_key();
+    let data =  "testing".as_bytes();
+    let signature = private_key.sign(PaddingScheme::new_pkcs1v15_sign_raw(), data).unwrap();
+    let verified = public_key.verify(PaddingScheme::new_pkcs1v15_sign_raw(), &data, &signature);
+    assert_eq!(verified.is_err(), false);
 }
 
 #[test]

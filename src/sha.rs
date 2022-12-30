@@ -1,6 +1,6 @@
 use std::ffi::{c_char, CStr, CString};
 
-use rsa::signature::digest::core_api::CtVariableCoreWrapper;
+
 use sha_crypt::{Sha512Params, sha512_simple, sha512_check};
 
 #[no_mangle]

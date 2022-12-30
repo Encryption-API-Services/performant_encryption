@@ -79,11 +79,9 @@ pub extern "C" fn get_key_pair(key_size: usize) -> RsaKeyPair {
 }
 
 #[test]
-fn rsa_sign_nonffi_test() {
-    let keys = get_key_pair(4096);
-    let private_key_cstr = unsafe {CString::from_raw(keys.priv_key)};
+fn rsa_sign_data_test() {
     let mut rng: OsRng = OsRng;
-    let private_key = RsaPrivateKey::from_pkcs8_pem(private_key_cstr).unwrap();
+    let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, 2094).expect("failed to generate a key");
     let public_key: RsaPublicKey = private_key.to_public_key();
     let data = b"testing";
     let signature = private_key.sign(PaddingScheme::new_pkcs1v15_sign_raw(), data).unwrap();
@@ -91,7 +89,7 @@ fn rsa_sign_nonffi_test() {
 }
 
 #[test]
-fn rsa_verify_nonffi_test() {
+fn rsa_verify_data_test() {
     let mut rng: OsRng = OsRng;
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, 2094).expect("failed to generate a key");
     let public_key: RsaPublicKey = private_key.to_public_key();

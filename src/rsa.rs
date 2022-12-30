@@ -10,6 +10,7 @@ pub struct RsaKeyPair {
     pub priv_key: *mut c_char
 }
 
+#[repr(C)]
 pub struct RsaSignResult {
     pub signature: *mut c_char,
     pub public_key: *mut c_char

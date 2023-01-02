@@ -6,6 +6,6 @@ pub extern "C" fn free_cstring_memory(s: *mut c_char) {
         if s.is_null() {
             return;
         }
-        CString::from_raw(s)
+        let _ = CString::from_raw(s);
     };
 }

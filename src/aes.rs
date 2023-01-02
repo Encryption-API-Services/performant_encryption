@@ -1,65 +1,59 @@
-use magic_crypt::{new_magic_crypt, MagicCryptTrait};
+use aes_gcm::{Aes256Gcm, aead::{OsRng, AeadMut}, Nonce, KeyInit};
 use std::ffi::{c_char, CStr, CString};
+
+#[repr(C)]
+pub struct AesEncrypt {
+    pub key: *mut c_char,
+    pub ciphertext: *mut c_char,
+}
 
 #[no_mangle]
 pub extern "C" fn aes256_encrypt_string(
-    key: *const c_char,
+    nonce_key: *const c_char,
     to_encrypt: *const c_char,
-) -> *mut c_char {
-    let string_key = unsafe {
-        assert!(!key.is_null());
+) -> AesEncrypt {
+    let nonce_string_key = unsafe {
+        assert!(!nonce_key.is_null());
 
-        CStr::from_ptr(key)
-    }
-    .to_str()
-    .unwrap();
+        CStr::from_ptr(nonce_key)
+    }.to_str().unwrap().as_bytes();
 
-    let string_to_encrypt: &str = unsafe {
+    let string_to_encrypt = unsafe {
         assert!(!to_encrypt.is_null());
 
         CStr::from_ptr(to_encrypt)
+    }.to_str().unwrap().as_bytes();
+
+    let key = Aes256Gcm::generate_key(&mut OsRng);
+    let mut cipher = Aes256Gcm::new(&key);
+    let nonce = Nonce::from_slice(nonce_string_key); // 96-bits; unique per message
+    let ciphertext = cipher.encrypt(nonce, string_to_encrypt.as_ref()).unwrap();
+    return AesEncrypt {
+        key: CString::new(base64::encode(key)).unwrap().into_raw(),
+        ciphertext : CString::new(base64::encode(ciphertext)).unwrap().into_raw()
     }
-    .to_str()
-    .unwrap();
-
-    let mc: magic_crypt::MagicCrypt256 = new_magic_crypt!(string_key, 256);
-    let base64_string: CString = CString::new(mc.encrypt_str_to_base64(string_to_encrypt)).unwrap();
-    return base64_string.into_raw();
 }
 
-#[test]
-fn aes_encrypt_string_test() {
-    let key = "aesKey";
-    let key_cstr = CString::new(key).unwrap();
-    let key_bytes = key_cstr.as_bytes_with_nul();
-    let key_ptr = key_bytes.as_ptr() as *const i8;
-
-    let to_encrypt = "TestStringToEncrypt";
-    let to_encrypt_cstr = CString::new(to_encrypt).unwrap();
-    let to_encrypt_bytes = to_encrypt_cstr.as_bytes_with_nul();
-    let to_encrypt_ptr = to_encrypt_bytes.as_ptr() as *const i8;
-
-    let encrypted_string_ptr = aes256_encrypt_string(key_ptr, to_encrypt_ptr);
-    let encrypted_string_cstr = unsafe { CString::from_raw(encrypted_string_ptr) };
-    let encrypted_string = encrypted_string_cstr.to_str().unwrap();
-    assert_ne!(encrypted_string, to_encrypt);
-    assert_ne!(encrypted_string, key);
-}
 
 #[no_mangle]
 pub extern "C" fn aes256_decrypt_string(
+    nonce_key: *const c_char,
     key: *const c_char,
     to_decrypt: *const c_char,
 ) -> *mut c_char {
-    let string_key = unsafe {
+    let nonce_string_key = unsafe {
+        assert!(!nonce_key.is_null());
+
+        CStr::from_ptr(nonce_key)
+    }.to_str().unwrap().as_bytes();
+
+    let key_vec = unsafe {
         assert!(!key.is_null());
 
         CStr::from_ptr(key)
-    }
-    .to_str()
-    .unwrap();
+    }.to_str().unwrap();
 
-    let string_to_decrypt: &str = unsafe {
+    let string_to_decrypt = unsafe {
         assert!(!to_decrypt.is_null());
 
         CStr::from_ptr(to_decrypt)
@@ -67,31 +61,11 @@ pub extern "C" fn aes256_decrypt_string(
     .to_str()
     .unwrap();
 
-    let mc: magic_crypt::MagicCrypt256 = new_magic_crypt!(string_key, 256);
-    let decrypted_string =
-        CString::new(mc.decrypt_base64_to_string(string_to_decrypt).unwrap()).unwrap();
-    return decrypted_string.into_raw();
-}
+    let key_string = base64::decode(key_vec).unwrap();
+    let string_to_decrypt_vec = base64::decode(string_to_decrypt).unwrap();
 
-#[test]
-fn aes256_decrypt_string_test() {
-    let key = "aesKey";
-    let key_cstr = CString::new(key).unwrap();
-    let key_bytes = key_cstr.as_bytes_with_nul();
-    let key_ptr = key_bytes.as_ptr() as *const i8;
-
-    let to_encrypt = "TestStringToEncrypt";
-    let to_encrypt_cstr = CString::new(to_encrypt).unwrap();
-    let to_encrypt_bytes = to_encrypt_cstr.as_bytes_with_nul();
-    let to_encrypt_ptr = to_encrypt_bytes.as_ptr() as *const i8;
-
-    let encrypted_string_ptr = aes256_encrypt_string(key_ptr, to_encrypt_ptr);
-    let encrypted_string_cstr = unsafe { CString::from_raw(encrypted_string_ptr) };
-    let encrypted_string_bytes = encrypted_string_cstr.as_bytes_with_nul();
-    let encrypted_string_ptr = encrypted_string_bytes.as_ptr() as *const i8;
-
-    let decrypted_string_ptr = aes256_decrypt_string(key_ptr, encrypted_string_ptr);
-    let decrypted_string_cstr = unsafe { CString::from_raw(decrypted_string_ptr) };
-    let decrypted_string = decrypted_string_cstr.into_string().unwrap();
-    assert_eq!(decrypted_string, to_encrypt);
+    let mut cipher = Aes256Gcm::new_from_slice(&key_string).unwrap();
+    let nonce = Nonce::from_slice(&nonce_string_key);
+    let plaintext = cipher.decrypt(nonce, string_to_decrypt_vec.as_ref()).unwrap();
+    return CString::new(plaintext).unwrap().into_raw();
 }

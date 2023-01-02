@@ -5,4 +5,3 @@ mod bcrypt;
 mod helpers;
 mod rsa;
 mod scrypt;
-mod sha;

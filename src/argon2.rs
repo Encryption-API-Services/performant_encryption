@@ -54,7 +54,9 @@ pub extern "C" fn argon2_hash(pass_to_hash: *const c_char) -> *mut c_char {
     .as_bytes();
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = CString::new(argon2.hash_password(pass_bytes, &salt).unwrap().to_string()).unwrap().into_raw();
+    let password_hash = CString::new(argon2.hash_password(pass_bytes, &salt).unwrap().to_string())
+        .unwrap()
+        .into_raw();
     return password_hash;
 }
 

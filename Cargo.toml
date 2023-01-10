@@ -17,6 +17,7 @@ aes-gcm = "0.10.1"
 argon2 = "0.4.1"
 base64 = "0.20.0"
 bcrypt = "0.13.0"
+ed25519-dalek = "1.0.1"
 rand = "0.8.5"
 rsa = "0.7.2"
 scrypt = "0.10.0"
@@ -24,3 +25,6 @@ sha3 = "0.10.6"
 
 [profile.dev.package.num-bigint-dig]
 opt-level = 3
+
+[dependencies.ed25519-dalek]
+version = "1"
